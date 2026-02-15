@@ -5,6 +5,7 @@ from io import BytesIO
 import re
 import time
 import zipfile
+import requests
 
 st.set_page_config(page_title="Spec Constraint Controller", layout="wide")
 
@@ -304,4 +305,5 @@ with center:
             st.snow()
 
 st.caption("© 2026 Beeraboina Rahul")
+
 
