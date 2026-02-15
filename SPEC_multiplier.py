@@ -33,7 +33,7 @@ st.title("Automated Batch Spec Constraint Controller V1.0")
 st.markdown(
     """
     <div style='text-align: center; margin-top: 10px; margin-bottom: 10px;'>
-        <a href="https://github.com/Rahul-2305/ADS-Automated-Multiplication/tree/main" target="_blank">
+        <a href="https://github.com/Rahul-2305/Automated_Spec_Constrainer/tree/main" target="_blank">
             <button style="
                 background-color:#063970;
                 color:white;
@@ -305,5 +305,6 @@ with center:
             st.snow()
 
 st.caption("© 2026 Beeraboina Rahul")
+
 
 
