@@ -1,6 +1,6 @@
 **AUTOMATED SPEC CONSTRAINER V1.0**
 
-Deployed :
+Deployed : https://spec-constrainer-beeraboina-rahul-v1.streamlit.app/
 
 This is a automated spec multiplier, year constrainer and including/excluding existing variables.
 You can upload multiple specs and 1 factor sheet (which has many sheets with factors, constrainer year and etc.) 
