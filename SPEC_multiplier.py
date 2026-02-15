@@ -1,0 +1,291 @@
+import streamlit as st
+import pandas as pd
+from openpyxl import load_workbook
+from io import BytesIO
+import re
+import time
+import zipfile
+
+st.set_page_config(page_title="Spec Constraint Controller", layout="wide")
+
+# ---------------------------
+# DARK UI STYLING
+# ---------------------------
+st.markdown("""
+<style>
+body { background-color: #0E1117; color: white; }
+
+.stProgress > div > div > div > div {
+    background-color: #00C6FF;
+}
+
+.green-time {
+    color: #2ECC71;
+    font-weight: 500;
+    margin-top: 12px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.title("Automated Batch Spec Constraint Controller V1.0")
+
+st.markdown(
+    """
+    <div style='text-align: center; margin-top: 10px; margin-bottom: 10px;'>
+        <a href="https://github.com/Rahul-2305/ADS-Automated-Multiplication/tree/main" target="_blank">
+            <button style="
+                background-color:#063970;
+                color:white;
+                padding:10px 20px;
+                border:none;
+                border-radius:8px;
+                font-size:16px;
+                cursor:pointer;">
+                HOW TO USE ?
+            </button>
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# ---------------------------
+# FILE UPLOADS
+# ---------------------------
+uploaded_files = st.file_uploader(
+    "Upload Spec Files",
+    type=["xlsx"],
+    accept_multiple_files=True
+)
+
+factor_file = st.file_uploader(
+    "Upload Factor File (Multiple Sheets)",
+    type=["xlsx"]
+)
+
+if uploaded_files and factor_file:
+
+    factor_excel = pd.ExcelFile(factor_file)
+    available_sheets = factor_excel.sheet_names
+
+    st.subheader("Select Factor Sheet For Each Spec File")
+
+    spec_sheet_map = {}
+
+    # Header Row
+    header_col1, header_col2 = st.columns([3, 2])
+    header_col1.markdown("**Spec File**")
+    header_col2.markdown("**Factor Sheet**")
+
+    st.markdown("---")
+
+    # Proper aligned rows
+    for file in uploaded_files:
+
+        row_col1, row_col2 = st.columns([3, 2])
+
+        with row_col1:
+            st.markdown(
+                f"<div style='padding-top:8px; font-size:16px; font-weight:500;'>"
+                f"{file.name}</div>",
+                unsafe_allow_html=True
+            )
+
+        with row_col2:
+            selected_sheet = st.selectbox(
+                "",
+                options=available_sheets,
+                key=file.name
+            )
+
+        spec_sheet_map[file.name] = selected_sheet
+
+    st.markdown("")
+
+    if st.button("Start Processing"):
+
+        start_time = time.time()
+
+        progress_bar = st.progress(0)
+        progress_text = st.empty()
+
+        total_steps = len(uploaded_files)
+        current_step = 0
+
+        zip_buffer = BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+
+            for spec_file in uploaded_files:
+
+                selected_sheet = spec_sheet_map[spec_file.name]
+
+                factor_df = pd.read_excel(
+                    factor_file,
+                    sheet_name=selected_sheet
+                )
+                factor_df.columns = factor_df.columns.str.strip()
+
+                cols = list(factor_df.columns)
+                left_cols = cols[:3]
+                right_cols = cols[-2:]
+
+                wb = load_workbook(spec_file)
+                ws = wb["Base Hypothesis"]
+                model_ws = wb["Model Specifications"]
+
+                variable_col = 11
+                start_col = 12
+                end_col = 29
+                year_row = 3
+                data_start_row = 5
+
+                # ---------------------------
+                # BASE HYPOTHESIS
+                # ---------------------------
+                for _, row_data in factor_df.iterrows():
+
+                    variable = str(row_data[left_cols[0]]).strip().lower(
+                    ) if pd.notna(row_data[left_cols[0]]) else None
+                    factor_value = row_data[left_cols[1]] if pd.notna(
+                        row_data[left_cols[1]]) else None
+                    constrainer = str(row_data[left_cols[2]]).strip(
+                    ) if pd.notna(row_data[left_cols[2]]) else None
+
+                    if variable and constrainer:
+
+                        for row in range(data_start_row, ws.max_row + 1):
+
+                            cell_value = ws.cell(
+                                row=row, column=variable_col).value
+
+                            if cell_value and str(cell_value).strip().lower() == variable:
+
+                                if constrainer.upper() == "M":
+
+                                    for col in range(start_col, end_col + 1):
+                                        cell = ws.cell(row=row, column=col)
+                                        if isinstance(cell.value, (int, float)):
+                                            cell.value *= factor_value
+                                            cell.number_format = "0.00%"
+
+                                else:
+
+                                    for col in range(start_col, end_col + 1):
+                                        ws.cell(row=row, column=col).value = 0
+                                        ws.cell(
+                                            row=row, column=col).number_format = "0.00%"
+
+                                    for col in range(start_col, end_col + 1):
+
+                                        year_cell = ws.cell(
+                                            row=year_row, column=col).value
+
+                                        if year_cell and constrainer.lower() in str(year_cell).lower():
+
+                                            ws.cell(
+                                                row=row, column=col).value = factor_value
+                                            ws.cell(
+                                                row=row, column=col).number_format = "0.00%"
+
+                                            if col + 1 <= end_col:
+                                                ws.cell(
+                                                    row=row, column=col + 1).value = factor_value
+                                                ws.cell(
+                                                    row=row, column=col + 1).number_format = "0.00%"
+
+                                            break
+                                break
+
+                # ---------------------------
+                # MODEL SPECIFICATIONS
+                # ---------------------------
+                for _, row_data in factor_df.iterrows():
+
+                    model_variable = str(row_data[right_cols[0]]).strip(
+                    ).lower() if pd.notna(row_data[right_cols[0]]) else None
+                    yesno_value = str(row_data[right_cols[1]]).strip(
+                    ) if pd.notna(row_data[right_cols[1]]) else None
+
+                    if model_variable and yesno_value.lower() in ["yes", "no"]:
+
+                        for row in range(1, model_ws.max_row + 1):
+
+                            model_var = model_ws.cell(row=row, column=4).value
+
+                            if model_var and str(model_var).strip().lower() == model_variable:
+
+                                model_ws.cell(
+                                    row=row, column=5).value = yesno_value.capitalize()
+                                break
+
+                # VERSION INCREMENT
+                original_name = spec_file.name
+                match = re.search(r'v(\d+)', original_name, re.IGNORECASE)
+
+                if match:
+                    version = int(match.group(1)) + 1
+                    new_name = re.sub(
+                        r'v\d+', f'V{version}', original_name, flags=re.IGNORECASE)
+                else:
+                    new_name = original_name.replace(".xlsx", "_V2.xlsx")
+
+                output = BytesIO()
+                wb.save(output)
+                output.seek(0)
+
+                zip_file.writestr(new_name, output.read())
+
+                current_step += 1
+                percent = int((current_step / total_steps) * 100)
+                progress_bar.progress(percent)
+                progress_text.markdown(f"**Progress: {percent}%**")
+
+        # ---------------------------
+        # FINISH
+        # ---------------------------
+        end_time = time.time()
+        elapsed_time = round(end_time - start_time, 2)
+
+        progress_bar.progress(100)
+        progress_text.markdown("**Progress: 100%**")
+
+        st.markdown(
+            f"<div class='green-time'>⏱ Execution Time: {elapsed_time} seconds</div>",
+            unsafe_allow_html=True
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        zip_buffer.seek(0)
+
+        st.download_button(
+            label="⬇ Download All Processed Specs (ZIP)",
+            data=zip_buffer,
+            file_name="Processed_Spec_Files.zip",
+            mime="application/zip"
+        )
+
+
+with st.expander("About this App"):
+    st.write("Created by Beeraboina Rahul")
+    st.write("Made in Python & Streamlit")
+    st.write(
+        "Know more about Beeraboina Rahul at https://rahul-2305.github.io/Website/")
+
+col1, col2 = st.columns(2)
+
+left, center, right = st.columns([1, 2, 1])
+
+with center:
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("🎈 Want some Balloons"):
+            st.balloons()
+
+    with col2:
+        if st.button("❄️ Want some Snow"):
+            st.snow()
+
+st.caption("© 2026 Beeraboina Rahul")
