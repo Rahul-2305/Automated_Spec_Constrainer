@@ -63,6 +63,21 @@ factor_file = st.file_uploader(
     type=["xlsx"]
 )
 
+@st.cache_data
+def load_sample_template(url):
+    response = requests.get(url)
+    return response.content if response.status_code == 200 else None
+sample_url = "https://github.com/Rahul-2305/Automated_Spec_Constrainer/raw/refs/heads/main/Factor_Sheet.xlsx"
+sample_content = load_sample_template(sample_url)
+
+if sample_content:
+    st.download_button(
+        label="⬇ Download Factor File Sample Template",
+        data=sample_content,
+        file_name="Factor_File_Sample_Template.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
 if uploaded_files and factor_file:
 
     factor_excel = pd.ExcelFile(factor_file)
@@ -289,3 +304,4 @@ with center:
             st.snow()
 
 st.caption("© 2026 Beeraboina Rahul")
+
