@@ -32,7 +32,7 @@ body { background-color: #0E1117; color: white; }
 """, unsafe_allow_html=True)
 
 st.title("Automated Batch Spec Constraint Controller V2.0")
-st.write("Now supports different projects. You just need to specify the column where your contribution starts and where it ends.")
+st.info("Now supports different projects. You just need to specify the column where your contribution starts and where it ends.")
 st.markdown(
     """
     <div style='text-align: center; margin-top: 10px; margin-bottom: 10px;'>
