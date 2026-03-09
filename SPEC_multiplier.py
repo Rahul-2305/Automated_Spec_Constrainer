@@ -287,7 +287,7 @@ with st.expander("About this App"):
     st.write("Created by Beeraboina Rahul")
     st.write("Made in Python & Streamlit")
     st.write(
-        "Know more about Beeraboina Rahul at https://rahul-2305.github.io/Website/")
+        "Know more about Beeraboina Rahul at https://beeraboina-rahul-website.streamlit.app/")
 
 col1, col2 = st.columns(2)
 
@@ -305,6 +305,7 @@ with center:
             st.snow()
 
 st.caption("© 2026 Beeraboina Rahul")
+
 
 
 
