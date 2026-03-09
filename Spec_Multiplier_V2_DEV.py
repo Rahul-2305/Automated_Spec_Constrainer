@@ -300,7 +300,7 @@ if uploaded_files and factor_file:
 with st.expander("About this App"):
     st.write("Created by Beeraboina Rahul")
     st.write("Made in Python & Streamlit")
-    st.write("Know more about Beeraboina Rahul at https://rahul-2305.github.io/Website/")
+    st.write("Know more about Beeraboina Rahul at https://beeraboina-rahul-website.streamlit.app/")
 
 left, center, right = st.columns([1, 2, 1])
 
